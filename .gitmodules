@@ -1,0 +1,3 @@
+[submodule "ckan-docker"]
+	path = ckan-docker
+	url = https://github.com/ckan/ckan-docker
