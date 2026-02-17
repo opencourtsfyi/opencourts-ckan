@@ -1,0 +1,4 @@
+# Placeholder directory for custom CKAN initialization scripts
+# 
+# Any .sh scripts placed here will be copied to /docker-entrypoint.d/ in the container
+# and executed during container startup (if the base image supports it).

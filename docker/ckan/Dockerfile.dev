@@ -1,0 +1,6 @@
+FROM ckan/ckan-dev:2.11
+
+# Install ckanext-scheming extension from PyPI
+RUN pip3 install ckanext-scheming
+
+USER ckan

@@ -1,0 +1,10 @@
+services:
+  ckan-dev:
+    build:
+      context: ../docker/ckan
+      dockerfile: Dockerfile.dev
+      args:
+        - TZ=${TZ}
+    volumes:
+      # Mount schema files into container
+      - ../schemas:/srv/app/schemas:ro
