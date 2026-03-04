@@ -14,8 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     -  uses: actions/checkout@v4
-    - name: Build and Test
+    - name: Ensure docker compose build works
       run: |
         cp .env.example .env
         docker compose build
-        # docker compose up -d
