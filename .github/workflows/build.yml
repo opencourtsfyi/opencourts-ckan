@@ -19,12 +19,3 @@ jobs:
         cp .env.example .env
         docker compose build
         # docker compose up -d
-  build_windows:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Build and Test
-      run: |
-        cp .env.example .env
-        docker compose build
-        # docker compose up -d
