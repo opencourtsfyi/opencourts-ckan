@@ -17,6 +17,10 @@ git log HEAD..ckan-docker/master --oneline
 git merge --squash ckan-docker/master
 # undo any changes we are definitely managing ourselves (currently just the readme):
 git checkout HEAD -- README.md
-git commit -m "Merge upstream ckan-docker changes"
+
+# commit the changes, and track the SHA of the upstream commit we merged:
+SHA=$(git rev-parse --short ckan-docker/master)
+git commit -m "Merged upstream ckan-docker up to SHA: <$SHA>"
+git tag -a ckan-docker-$SHA -m "Merged upstream ckan-docker up to SHA: <$SHA>"
 ```
 
