@@ -1,9 +1,0 @@
-repos:
-  - repo: local
-    hooks:
-      - id: check-upstream
-        name: Check for upstream changes
-        entry: ./bin/check_upstream.sh
-        language: script
-        pass_filenames: false
-        always_run: true
