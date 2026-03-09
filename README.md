@@ -50,6 +50,9 @@ bin/compose up
 
 Then setup VS Code to debug your instance: [ckan/ckan-docker](https://github.com/ckan/ckan-docker?tab=readme-ov-file#remote-debugging-with-vs-code).
 
+
+Note: the containers also support [debugging with pdb](https://github.com/ckan/ckan-docker?tab=readme-ov-file#6-debugging-with-pdb), if you prefer this.
+
 #### OSX
 
 ##### Apple Silicon
