@@ -42,15 +42,15 @@ The development environment can be seeded with test data. A small sample of the 
 export CKAN_API_TOKEN="$(./bin/ckan user token add ckan_admin my-test-token | tail -1 | tr -d '[:space:]')"
 
 # seed your database
-./scripts/seed.sh "$CKAN_API_TOKEN"
+uv run scripts/seed.py "$CKAN_API_TOKEN"
 
 # Seeding CKAN at http://localhost:5000...
-# Resource 'test-org' created
-# Resource 'test-package' created
-# Resource 'Test Data Measures For Justice: NC 2013' created
-# Resource 'Test Data Measures For Justice: NC locations' created
-# Resource 'Test Data Measures For Justice: NC measures' created
-# Resource 'Test Data Measures For Justice: NC filters' created
+# Action 'organization_create' reported conflict for 'test-org' (already exists).
+# Action 'package_create' reported conflict for 'test-package' (already exists).
+# Action 'resource_create' succeeded for 'Test Data Measures For Justice: NC 2013'
+# Action 'resource_create' succeeded for 'Test Data Measures For Justice: NC locations'
+# Action 'resource_create' succeeded for 'Test Data Measures For Justice: NC measures'
+# Action 'resource_create' succeeded for 'Test Data Measures For Justice: NC filters'
 ```
 
 Once you've executed this script you should see a test organization, and datasets on your local development site.
