@@ -79,45 +79,41 @@ def main():
             },
         )
 
-        resources = [
-            {
-                "package_id": "test-package",
-                "name": "Test Data Measures For Justice: NC 2013",
-                "url": "",
-                "format": "csv",
-                "f": "scripts/seed_data/nc/data-2013-nc.csv",
-            },
-            {
-                "package_id": "test-package",
-                "name": "Test Data Measures For Justice: NC locations",
-                "url": "",
-                "format": "csv",
-                "f": "scripts/seed_data/nc/locations.csv",
-            },
-            {
-                "package_id": "test-package",
-                "name": "Test Data Measures For Justice: NC measures",
-                "url": "",
-                "format": "csv",
-                "f": "scripts/seed_data/nc/measures.csv",
-            },
-            {
-                "package_id": "test-package",
-                "name": "Test Data Measures For Justice: NC filters",
-                "url": "",
-                "format": "csv",
-                "f": "scripts/seed_data/nc/filters.csv",
-            },
-        ]
-        for r in resources:
-            with open(r["f"], "rb") as f:
-                ckan_action(
-                    session,
-                    ckan_url,
-                    "resource_create",
-                    r,
-                    files={"upload": f},
-                )
+    resources = {
+        "scripts/seed_data/nc/data-2013-nc.csv": {
+            "package_id": "test-package",
+            "name": "Test Data Measures For Justice: NC 2013",
+            "url": "",
+            "format": "csv"
+        },
+        "scripts/seed_data/nc/locations.csv": {
+            "package_id": "test-package",
+            "name": "Test Data Measures For Justice: NC locations",
+            "url": "",
+            "format": "csv"
+        },
+        "scripts/seed_data/nc/measures.csv": {
+            "package_id": "test-package",
+            "name": "Test Data Measures For Justice: NC measures",
+            "url": "",
+            "format": "csv"
+        },
+        "scripts/seed_data/nc/filters.csv": {
+            "package_id": "test-package",
+            "name": "Test Data Measures For Justice: NC filters",
+            "url": "",
+            "format": "csv"
+        }
+    }
+    for f, payload in resources.items():
+        with open(f, "rb") as file:
+            ckan_action(
+                session,
+                ckan_url,
+                "resource_create",
+                payload,
+                files={"upload": file},
+            )
 
 
 if __name__ == "__main__":
