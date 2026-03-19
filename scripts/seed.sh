@@ -44,11 +44,11 @@ def ckan_action(
 
     parsed_response = resp.json()
     print(f"Resource '{data['name']}' created")
-    return resp.json()
+    return parsed_response
 
 
 def main():
-    if len(sys.argv) < 1:
+    if len(sys.argv) < 2:
         print(f"Usage: {sys.argv[0]} <API_TOKEN>", file=sys.stderr)
         sys.exit(1)
 
