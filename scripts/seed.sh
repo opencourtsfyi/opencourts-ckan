@@ -37,13 +37,13 @@ def ckan_action(
         resp = session.post(url, json=data)
 
     if resp.status_code == 409:
-        print(f"Resource '{data['name']}' already exists.")
+        print(f"Action '{action}' reported conflict for '{data['name']}' (already exists).")
         return None
     else:
         resp.raise_for_status()
 
     parsed_response = resp.json()
-    print(f"Resource '{data['name']}' created")
+    print(f"Action '{action}' succeeded for '{data['name']}'")
     return parsed_response
 
 
