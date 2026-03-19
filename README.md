@@ -39,10 +39,10 @@ The development environment can be seeded with test data. A small sample of the 
 
 ```sh
 # create an API token
-export CKAN_API_TOKEN=`./bin/ckan user token add ckan_admin my-test-token | tail -1 | tr -d '[:space:]'`
+export CKAN_API_TOKEN="$(./bin/ckan user token add ckan_admin my-test-token | tail -1 | tr -d '[:space:]')"
 
 # seed your database
-./scripts/seed.sh $CKAN_API_TOKEN
+./scripts/seed.sh "$CKAN_API_TOKEN"
 
 # Seeding CKAN at http://localhost:5000...
 # Resource 'test-org' created
