@@ -21,7 +21,7 @@ This project uses docker and docker compose. To get started:
 - Copy the `.env.example` file to `.env`
 - Build the docker containers
 - Start docker compose
-- Visit https://localhost:8443/
+- Visit https://localhost:5000/
 - Login with the default credentials (ckan_admin/test1234)
 
 ```sh
@@ -30,7 +30,7 @@ bin/compose build
 bin/compose up
 
 # in a separate terminal:
-open https://localhost:8443/
+open https://localhost:5000/
 ```
 
 ### Seeding Data
