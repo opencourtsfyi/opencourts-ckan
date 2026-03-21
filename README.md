@@ -6,6 +6,14 @@ The metadata, pipelines, extensions for the CKAN portion of open courts.
 
 This project is a copy of the [ckan/ckan-docker](https://github.com/ckan/ckan-docker) repository. For more information on local development, see the [ckan-docker development mode instructions](https://github.com/ckan/ckan-docker?tab=readme-ov-file#development-mode).
 
+### Prerequisites
+
+Ensure the following packages have been installed on your system:
+
+- Use a *nix compatible system.
+- [Docker](https://www.docker.com)
+- [uv](https://github.com/astral-sh/uv)
+
 ### Setup
 
 This project uses docker and docker compose. To get started:
@@ -13,7 +21,7 @@ This project uses docker and docker compose. To get started:
 - Copy the `.env.example` file to `.env`
 - Build the docker containers
 - Start docker compose
-- Visit https://localhost:8443/
+- Visit https://localhost:5000/
 - Login with the default credentials (ckan_admin/test1234)
 
 ```sh
@@ -22,7 +30,37 @@ bin/compose build
 bin/compose up
 
 # in a separate terminal:
-open https://localhost:8443/
+open https://localhost:5000/
+```
+
+### Seeding Data
+
+The development environment can be seeded with test data. A small sample of the [Datasets - Measures for Justice](https://app.measuresforjustice.org/portal/datasets) for NC has been added to this project for the purpose. To set this up:
+
+```sh
+# create an API token
+export CKAN_API_TOKEN="$(./bin/ckan user token add ckan_admin my-test-token | tail -1 | tr -d '[:space:]')"
+
+# seed your database
+uv run scripts/seed.py "$CKAN_API_TOKEN"
+
+# Seeding CKAN at http://localhost:5000...
+# Action 'organization_create' reported conflict for 'test-org' (already exists).
+# Action 'package_create' reported conflict for 'test-package' (already exists).
+# Action 'resource_create' succeeded for 'Test Data Measures For Justice: NC 2013'
+# Action 'resource_create' succeeded for 'Test Data Measures For Justice: NC locations'
+# Action 'resource_create' succeeded for 'Test Data Measures For Justice: NC measures'
+# Action 'resource_create' succeeded for 'Test Data Measures For Justice: NC filters'
+```
+
+Once you've executed this script you should see a test organization, and datasets on your local development site.
+
+### Teardown
+
+To remove all resources created for development remove all the docker resources (containers, volumes) you have created:
+
+```sh
+./bin/compose down -v
 ```
 
 ### Remote debugging
