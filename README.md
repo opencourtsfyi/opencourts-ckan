@@ -19,7 +19,7 @@ For system design and machine-readable catalogue APIs (CKAN Action API, DCAT), s
 
 ## Architecture
 
-Machine-readable catalogues — datasets, resources, and metadata for automated tools and agents — are documented in [ARCHITECTURE.md](ARCHITECTURE.md). That covers the CKAN Action API, DCAT feeds, anonymous vs authenticated access, and local verification using seeded test data.
+Machine-readable catalogues — datasets, resources, and metadata for automated tools and agents — are documented in [ARCHITECTURE.md](ARCHITECTURE.md). That covers the CKAN Action API, DCAT feeds, anonymous vs authenticated access, and local verification via `scripts/verify_catalog.py`.
 
 ## Development
 
@@ -67,6 +67,18 @@ uv run scripts/seed.py "$CKAN_API_TOKEN"
 ```
 
 Once you've executed this script you should see a test organization, and datasets on your local development site. The seeded `test-org` and `test-package` datasets are used in the [catalogue API examples](ARCHITECTURE.md#ckan-action-api) in ARCHITECTURE.md.
+
+### Verifying catalogue access
+
+After seeding, run the catalogue smoke script (anonymous read checks — no API token):
+
+```sh
+uv run scripts/verify_catalog.py
+```
+
+Wait until CKAN is healthy (`curl http://localhost:5000/api/action/status_show`) before running, especially right after `bin/compose up`.
+
+This is a minimal smoke script, not a full test suite. Broader local test infrastructure is tracked in [opencourts-infra#17](https://github.com/opencourtsfyi/opencourts-infra/issues/17) / [#23](https://github.com/opencourtsfyi/opencourts-infra/issues/23). See [ARCHITECTURE.md § Local verification workflow](ARCHITECTURE.md#local-verification-workflow).
 
 ### Teardown
 

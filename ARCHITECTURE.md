@@ -191,27 +191,29 @@ Catalogue responses include CKAN-native fields available without custom extensio
 | Organization | `package_show`, `organization_show` | Owning org metadata |
 | Last modified | `package_show` | `metadata_modified` |
 
-**Follow-on work (not in current catalogue scope):**
-
-- **FR-6** — structured field-level schema documentation
-- **FR-7 / FR-8** — provenance-specific fields and display
-- **FR-4** — bulk CSV/JSON download with pagination/filtering
 
 ## Local verification workflow
 
-After [setup and seeding](README.md#seeding-data):
+After [setup and seeding](README.md#seeding-data), run the catalogue smoke script:
 
 ```sh
-# Anonymous read — should return success: true
-curl -s -X POST "http://localhost:5000/api/3/action/package_show" \
-  -H "Content-Type: application/json" \
-  -d '{"id": "test-package"}'
-
-# DCAT catalogue
-curl -s "http://localhost:5000/catalog.jsonld" | head
+uv run scripts/verify_catalog.py
 ```
 
-Automated verification (`scripts/verify_catalog.py`) and CI integration are planned as follow-up work.
+`scripts/verify_catalog.py` checks anonymous read access for [FR-5](https://github.com/opencourtsfyi/opencourts-ckan/issues/5) using the seeded `test-org` and `test-package` data:
+
+| Check | Endpoint | What it proves |
+|-------|----------|----------------|
+| CKAN up + DCAT enabled | `status_show` | Portal reachable; `dcat` in plugins |
+| Dataset catalogue | `package_show` | Public `test-package` with ≥4 resources |
+| Dataset search | `package_search` | Dataset discoverable without auth |
+| Dataset list | `package_list` | Dataset name listed without auth |
+| Organization metadata | `organization_show` | `test-org` visible without auth |
+| DCAT catalogue | `GET /catalog.jsonld` | Seeded dataset present in RDF feed |
+
+This is intentionally minimal — a single smoke script, not pytest or a shared test runner. Generic portal/DB/storage smoke tests and CI integration are tracked in [opencourts-infra#17](https://github.com/opencourtsfyi/opencourts-infra/issues/17) and [#23](https://github.com/opencourtsfyi/opencourts-infra/issues/23).
+
+The script covers both the CKAN Action API and DCAT layers; manual `curl` checks are optional if you need to debug a single endpoint.
 
 ## References
 
