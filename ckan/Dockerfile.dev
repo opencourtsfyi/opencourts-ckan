@@ -27,10 +27,10 @@ FROM ckan/ckan-dev:2.11
 ### Pages ###
 #RUN  pip3 install -e git+https://github.com/ckan/ckanext-pages.git#egg=ckanext-pages
 
-### DCAT ###
-# ckanext-dcat 2.4.3 — CKAN 2.11 compatible (https://github.com/ckan/ckanext-dcat/releases/tag/v2.4.3)
+### CKAN extensions ###
 USER root
-RUN pip3 install ckanext-dcat==2.4.3
+COPY requirements.txt /tmp/
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Clone the extension(s) your are writing for your own project in the `src` folder
 # to get them mounted in this image at runtime

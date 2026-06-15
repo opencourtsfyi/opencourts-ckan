@@ -78,7 +78,7 @@ uv run scripts/verify_catalog.py
 
 Wait until CKAN is healthy (`curl http://localhost:5000/api/action/status_show`) before running, especially right after `bin/compose up`.
 
-This is a minimal smoke script, not a full test suite. Broader local test infrastructure is tracked in [opencourts-infra#17](https://github.com/opencourtsfyi/opencourts-infra/issues/17) / [#23](https://github.com/opencourtsfyi/opencourts-infra/issues/23). See [ARCHITECTURE.md § Local verification workflow](ARCHITECTURE.md#local-verification-workflow).
+> **NOTE**: This is a minimal smoke script, not a full test suite. Broader local test infrastructure is tracked in [opencourts-infra#17](https://github.com/opencourtsfyi/opencourts-infra/issues/17) / [#23](https://github.com/opencourtsfyi/opencourts-infra/issues/23). See [ARCHITECTURE.md § Local verification workflow](ARCHITECTURE.md#local-verification-workflow).
 
 ### Teardown
 
