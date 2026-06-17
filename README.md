@@ -2,8 +2,11 @@
 
 The metadata, pipelines, extensions for the CKAN portion of open courts
 
+For system design and machine-readable catalogue APIs (CKAN Action API, DCAT), see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Table of contents
 
+- [Architecture](#architecture)
 - [Development](#development)
   - [Prerequisites](#prerequisites)
   - [Setup](#setup)
@@ -13,6 +16,10 @@ The metadata, pipelines, extensions for the CKAN portion of open courts
   - [OSX](#osx)
   - [Running with HTTPS](#running-with-https)
 - [Tracking ckan-docker upstream](#tracking-ckan-docker-upstream)
+
+## Architecture
+
+Machine-readable catalogues — datasets, resources, and metadata for automated tools and agents — are documented in [ARCHITECTURE.md](ARCHITECTURE.md). That covers the CKAN Action API, DCAT feeds, anonymous vs authenticated access, and local verification via `scripts/verify_catalog.py`.
 
 ## Development
 
@@ -35,8 +42,9 @@ This project uses Docker and Docker Compose. To get started:
 | 3 | Start Docker Compose | `bin/compose up` |
 | 4 | Visit the local CKAN site | Open [http://localhost:5000/](http://localhost:5000/) in a browser |
 | 5 | Log in with the default admin credentials | `ckan_admin` / `test1234` |
+| 6 | (Optional) Explore catalogue APIs | See [ARCHITECTURE.md](ARCHITECTURE.md) — seed test data first ([Seeding Data](#seeding-data)) |
 
-> **NOTE**: to run locally using HTTPS, see [Running with HTTPS](#running-with-https).
+> **NOTE**: to run locally using HTTPS, see [Running with HTTPS](#running-with-https). Keep `CKAN_SITE_URL` in `.env` aligned with your HTTP/HTTPS choice; it affects catalogue and download URLs (see [ARCHITECTURE.md](ARCHITECTURE.md)).
 
 ### Seeding Data
 
@@ -58,7 +66,19 @@ uv run scripts/seed.py "$CKAN_API_TOKEN"
 # Action 'resource_create' succeeded for 'Test Data Measures For Justice: NC filters'
 ```
 
-Once you've executed this script you should see a test organization, and datasets on your local development site.
+Once you've executed this script you should see a test organization, and datasets on your local development site. The seeded `test-org` and `test-package` datasets are used in the [catalogue API examples](ARCHITECTURE.md#ckan-action-api) in ARCHITECTURE.md.
+
+### Verifying catalogue access
+
+After seeding, run the catalogue smoke script (anonymous read checks — no API token):
+
+```sh
+uv run scripts/verify_catalog.py
+```
+
+Wait until CKAN is healthy (`curl http://localhost:5000/api/action/status_show`) before running, especially right after `bin/compose up`.
+
+> **NOTE**: This is a minimal smoke script, not a full test suite. Broader local test infrastructure is tracked in [opencourts-infra#17](https://github.com/opencourtsfyi/opencourts-infra/issues/17) / [#23](https://github.com/opencourtsfyi/opencourts-infra/issues/23). See [ARCHITECTURE.md § Local verification workflow](ARCHITECTURE.md#local-verification-workflow).
 
 ### Teardown
 
@@ -123,7 +143,7 @@ Recreate the containers so the changes take effect:
 bin/compose down && bin/compose up
 ```
 
-Then visit [https://localhost:5000](https://localhost:5000). Your browser will warn about the self-signed certificate — that is expected for local development.
+Then visit [https://localhost:5000](https://localhost:5000). Your browser will warn about the self-signed certificate — that is expected for local development. Set `CKAN_SITE_URL=https://localhost:5000` so [DCAT and resource URLs](ARCHITECTURE.md#dcat-feeds) use the correct scheme.
 
 To test the production-style nginx stack instead (HTTPS on port 8443), use `docker-compose.yml` rather than `bin/compose`, and set:
 
@@ -137,7 +157,7 @@ CKAN__DATAPUSHER__CALLBACK_URL_BASE=http://ckan:5000
 docker compose -f docker-compose.yml up
 ```
 
-Then visit [https://localhost:8443](https://localhost:8443).
+Then visit [https://localhost:8443](https://localhost:8443). Use `CKAN_SITE_URL=https://localhost:8443` for correct [catalogue URLs](ARCHITECTURE.md).
 
 ## Tracking ckan-docker upstream
 

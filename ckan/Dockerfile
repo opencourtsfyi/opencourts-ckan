@@ -3,6 +3,11 @@ FROM ckan/ckan-base:2.11
 # Install any extensions needed by your CKAN instance
 # See Dockerfile.dev for more details and examples
 
+### CKAN extensions ###
+USER root
+COPY requirements.txt /tmp/
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
 # Copy custom initialization scripts
 COPY --chown=ckan-sys:ckan-sys docker-entrypoint.d/* /docker-entrypoint.d/
 
