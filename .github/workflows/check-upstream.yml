@@ -2,7 +2,14 @@ name: Check upstream ckan-docker
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
+  schedule:
+    # Mondays 14:00 UTC — alert volunteers even when no PRs are open
+    - cron: '0 14 * * 1'
   workflow_dispatch:
 
 jobs:
@@ -11,7 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # needed to access tags
+          # Full history so ckan-docker-* merge tags are available to check_upstream.sh
+          fetch-depth: 0
 
       - name: Check for upstream changes
         run: bash scripts/check_upstream.sh

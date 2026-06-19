@@ -165,6 +165,8 @@ Then visit [https://localhost:8443](https://localhost:8443). Use `CKAN_SITE_URL=
 
 This repo uses a subset of [ckan/ckan-docker](https://github.com/ckan/ckan-docker). To pull in upstream changes when upgrading CKAN versions:
 
+Pull requests and pushes to `main` also run the [Check upstream ckan-docker](.github/workflows/check-upstream.yml) workflow (weekly on Mondays, or manually from `main` after merge). It compares `ckan-docker/master` to the latest `ckan-docker-*` merge tag; if upstream has moved, GitHub Actions shows a **warning** and the job still passes. After merging upstream, record the new baseline with the tag step below to clear the warning.
+
 ```sh
 # Set up a remote to track changes:
 git remote add ckan-docker https://github.com/ckan/ckan-docker.git
