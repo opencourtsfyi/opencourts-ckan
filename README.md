@@ -78,6 +78,8 @@ uv run scripts/verify_catalog.py
 
 Wait until CKAN is healthy (`curl http://localhost:5000/api/action/status_show`) before running, especially right after `bin/compose up`.
 
+> **CI**: Non-draft pull requests to `main`, pushes to `main`, and manual [workflow_dispatch](https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-workflow-runs/manually-running-a-workflow) runs execute the [Catalog smoke test](.github/workflows/catalog-smoke.yml) workflow. It brings up the dev stack, seeds data with `scripts/seed.py`, and runs `scripts/verify_catalog.py` — the same checks as above. Draft PRs skip the smoke test to save CI time; mark ready for review or run the workflow manually to trigger it.
+
 > **NOTE**: This is a minimal smoke script, not a full test suite. Broader local test infrastructure is tracked in [opencourts-infra#17](https://github.com/opencourtsfyi/opencourts-infra/issues/17) / [#23](https://github.com/opencourtsfyi/opencourts-infra/issues/23). See [ARCHITECTURE.md § Local verification workflow](ARCHITECTURE.md#local-verification-workflow).
 
 ### Teardown

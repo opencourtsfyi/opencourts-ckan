@@ -1,0 +1,73 @@
+name: Catalog smoke test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  catalog-smoke:
+    if: github.event.pull_request == null || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Configure environment
+        run: cp .env.example .env
+
+      - name: Build dev stack
+        run: bin/compose build
+
+      - name: Start dev stack
+        run: bin/compose up -d
+
+      - name: Wait for CKAN
+        run: |
+          set -euo pipefail
+          url="http://localhost:5000/api/action/status_show"
+          max_attempts=60
+          sleep_seconds=10
+          for attempt in $(seq 1 "$max_attempts"); do
+            if curl -fsS "$url" > /dev/null; then
+              echo "CKAN is ready (attempt ${attempt}/${max_attempts})"
+              exit 0
+            fi
+            echo "Waiting for CKAN... (attempt ${attempt}/${max_attempts})"
+            sleep "$sleep_seconds"
+          done
+          echo "ERROR: CKAN did not become healthy at ${url} within $((max_attempts * sleep_seconds)) seconds" >&2
+          exit 1
+
+      - name: Create sysadmin API token
+        run: |
+          set -euo pipefail
+          CKAN_API_TOKEN="$(./bin/ckan user token add ckan_admin ci-seed-token | tail -1 | tr -d '[:space:]')"
+          echo "::add-mask::${CKAN_API_TOKEN}"
+          echo "CKAN_API_TOKEN=${CKAN_API_TOKEN}" >> "$GITHUB_ENV"
+
+      - name: Seed database
+        run: uv run scripts/seed.py "$CKAN_API_TOKEN"
+
+      - name: Verify catalogue access
+        run: |
+          set -euo pipefail
+          echo "Waiting for Solr indexing after seed..."
+          sleep 10
+          if uv run scripts/verify_catalog.py; then
+            exit 0
+          fi
+          echo "First verify attempt failed; retrying once after additional delay..."
+          sleep 15
+          uv run scripts/verify_catalog.py
+
+      - name: Tear down dev stack
+        if: always()
+        run: bin/compose down -v
