@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes how **opencourts-ckan** exposes machine-readable catalogues for automated tools and AI agents. For local setup and day-to-day development commands, see [README.md](README.md).
+This document describes how **opencourts-ckan** exposes machine-readable catalogues for automated tools and AI agents. For local setup and day-to-day development commands, see [README.md](../README.md). For common setup problems, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## Table of contents
 
@@ -51,7 +51,7 @@ Client (curl, agent, verify_catalog.py)
 | Environment | Typical base URL | Compose file |
 |-------------|------------------|--------------|
 | Dev (default) | `http://localhost:5000` | `docker-compose.dev.yml` via `bin/compose` |
-| Dev with HTTPS | `https://localhost:5000` | Set `USE_HTTPS_FOR_DEV=true` — see [README § Running with HTTPS](README.md#running-with-https) |
+| Dev with HTTPS | `https://localhost:5000` | Set `USE_HTTPS_FOR_DEV=true` — see [README § Running with HTTPS](../README.md#running-with-https) |
 | Production-style (nginx) | `https://localhost:8443` | `docker-compose.yml` |
 
 All examples below use `http://localhost:5000`. Substitute your base URL when using HTTPS or nginx.
@@ -176,7 +176,7 @@ curl -s "http://localhost:5000/dataset/test-package.jsonld" | head
 
 The default catalog path is `/catalog.{_format}` (configurable via `ckanext.dcat.catalog_endpoint`). See [ckanext-dcat endpoint docs](https://docs.ckan.org/projects/ckanext-dcat/en/latest/endpoints.html).
 
-Catalog endpoints support pagination and filtering (e.g. `?page=2`, `?q=budget`). Public datasets appear after [seeding](README.md#seeding-data).
+Catalog endpoints support pagination and filtering (e.g. `?page=2`, `?q=budget`). Public datasets appear after [seeding](../README.md#seeding-data).
 
 ## Metadata available today
 
@@ -194,7 +194,7 @@ Catalogue responses include CKAN-native fields available without custom extensio
 
 ## Local verification workflow
 
-After [setup and seeding](README.md#seeding-data), run the catalogue smoke script:
+After [setup and seeding](../README.md#seeding-data), run the catalogue smoke script:
 
 ```sh
 uv run scripts/verify_catalog.py
@@ -212,6 +212,8 @@ uv run scripts/verify_catalog.py
 | DCAT catalogue | `GET /catalog.jsonld` | Seeded dataset present in RDF feed |
 
 This is intentionally minimal — a single smoke script, not pytest or a shared test runner. Generic portal/DB/storage smoke tests and CI integration are tracked in [opencourts-infra#17](https://github.com/opencourtsfyi/opencourts-infra/issues/17) and [#23](https://github.com/opencourtsfyi/opencourts-infra/issues/23).
+
+For the full end-to-end protocol (compose up → seed → smoke → down) on each supported OS, see [Cross-platform verification](CROSS_PLATFORM_VERIFICATION.md). Linux is validated in CI via [catalog-smoke.yml](../.github/workflows/catalog-smoke.yml); macOS and Windows (WSL2) use manual sign-off rows in that doc.
 
 The script covers both the CKAN Action API and DCAT layers; manual `curl` checks are optional if you need to debug a single endpoint.
 
