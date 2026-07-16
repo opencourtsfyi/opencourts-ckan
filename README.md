@@ -4,7 +4,7 @@ The metadata, pipelines, extensions for the CKAN portion of open courts
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md) — catalogue APIs (CKAN Action API, DCAT), system design, and local verification
+- [Architecture](docs/ARCHITECTURE.md) — catalogue APIs (CKAN Action API, DCAT), system design, and local verification (including `bin/test`)
 - [Troubleshooting](docs/TROUBLESHOOTING.md) — common local dev problems (ports, WSL2, macOS, volumes)
 
 ## Table of contents
@@ -15,7 +15,7 @@ The metadata, pipelines, extensions for the CKAN portion of open courts
   - [Setup](#setup)
   - [Common commands](#common-commands)
   - [Seeding Data](#seeding-data)
-  - [Verifying catalogue access](#verifying-catalogue-access)
+  - [Running tests](#running-tests)
   - [Teardown](#teardown)
   - [Remote debugging](#remote-debugging)
   - [Running with HTTPS](#running-with-https)
@@ -121,8 +121,10 @@ Windows requires WSL2 and Docker Desktop. Follow the steps below to get your env
 | Stop stack | `bin/compose down` |
 | Stop and remove volumes (reset local data) | `bin/compose down -v` — see [Troubleshooting](docs/TROUBLESHOOTING.md#resetting-volumes-and-stale-local-state) |
 | CKAN CLI | `./bin/ckan …` |
+| Run tests | `bin/test unit-setup`, `bin/test unit`, `bin/test smoke`, `bin/test catalogue`, `bin/test integration`, `bin/test all` — see [Running tests](#running-tests) |
 | Seed test data | `uv run scripts/seed.py "$CKAN_API_TOKEN"` |
-| Catalogue smoke test | `uv run scripts/verify_catalog.py` |
+| Stack smoke test | `bin/test smoke` |
+| Catalogue smoke test | `bin/test catalogue` (also run by `bin/test integration`) |
 | Check CKAN is up | `curl -s http://localhost:5000/api/action/status_show` |
 
 #### Notes
@@ -152,19 +154,49 @@ uv run scripts/seed.py "$CKAN_API_TOKEN"
 
 Once you've executed this script you should see a test organization, and datasets on your local development site. The seeded `test-org` and `test-package` datasets are used in the [catalogue API examples](docs/ARCHITECTURE.md#ckan-action-api) in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-### Verifying catalogue access
+### Running tests
 
-After seeding, run the catalogue smoke script (anonymous read checks — no API token):
+`bin/test` is the documented entry point for local unit, integration, and smoke tests. Run commands from the repo root on Linux, macOS, or WSL2.
+
+**Prerequisites:** dev stack running and healthy (`bin/compose up -d`; wait for `status_show` to succeed).
+
+On **Apple Silicon Macs**, set `export DOCKER_DEFAULT_PLATFORM=linux/amd64` before building or starting the stack (see [Prerequisites → macOS](#macos)).
 
 ```sh
-uv run scripts/verify_catalog.py
+# Unit tests (extensions in src/; no seed required)
+bin/test unit-setup   # once after adding or updating an extension
+bin/test unit
+
+# Smoke — stack only: portal, DB, storage (no seed required)
+bin/test smoke
+
+# Integration — stack + catalogue (catalogue requires seed)
+export CKAN_API_TOKEN="$(./bin/ckan user token add ckan_admin my-test-token | tail -1 | tr -d '[:space:]')"
+uv run scripts/seed.py "$CKAN_API_TOKEN"
+bin/test integration
+
+# Unit tests, then integration
+bin/test all
 ```
 
-Wait until CKAN is healthy (`curl http://localhost:5000/api/action/status_show`) before running, especially right after `bin/compose up`. If checks fail, see [Troubleshooting → CKAN not ready yet](docs/TROUBLESHOOTING.md#ckan-not-ready-yet).
+| Command | What it runs | Seed required? |
+| --- | --- | --- |
+| `bin/test unit-setup` | install extension test deps with `uv` inside `ckan-dev` | No |
+| `bin/test unit` | pytest for each `src/ckanext-*` extension inside `ckan-dev`; no-op when `src/` is empty | No |
+| `bin/test smoke` | Portal, PostgreSQL, and CKAN storage | No |
+| `bin/test catalogue` | Anonymous catalogue read access (FR-5) | Yes |
+| `bin/test integration` | Stack checks, then catalogue checks | Yes |
+| `bin/test all` | Unit tests, then integration | Yes (for integration) |
 
-> **CI**: Non-draft pull requests to `main`, pushes to `main`, and manual [workflow_dispatch](https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-workflow-runs/manually-running-a-workflow) runs execute the [Catalog smoke test](.github/workflows/catalog-smoke.yml) workflow. It brings up the dev stack, seeds data with `scripts/seed.py`, and runs `scripts/verify_catalog.py` — the same checks as above. Draft PRs skip the smoke test to save CI time; mark ready for review or run the workflow manually to trigger it.
+`bin/test all` runs `unit` then `integration`. Integration already includes stack checks (`smoke`), so you do not need a separate `bin/test smoke` when running `all`.
 
-> **NOTE**: This is a minimal smoke script, not a full test suite. Broader local test infrastructure is tracked in [opencourts-infra#17](https://github.com/opencourtsfyi/opencourts-infra/issues/17) / [#23](https://github.com/opencourtsfyi/opencourts-infra/issues/23). See [docs/ARCHITECTURE.md § Local verification workflow](docs/ARCHITECTURE.md#local-verification-workflow).
+Stack checks and catalogue checks live in separate scripts because stack health requires no seed data, while catalogue checks require seeded `test-org` / `test-package` data ([FR-5](https://github.com/opencourtsfyi/opencourts-ckan/issues/5)). See [docs/ARCHITECTURE.md § Local verification workflow](docs/ARCHITECTURE.md#local-verification-workflow).
+
+`bin/test unit` is a no-op when there are no extensions in `src/`. When extensions exist, run `bin/test unit-setup` once (or after dependency changes), then `bin/test unit`. Setup and tests run as the `ckan` user inside `ckan-dev` using a dedicated virtualenv (`/srv/app/.venv-unit`) with `uv`; extensions do not need to be listed in `CKAN__PLUGINS` for tests to pass. To use an extension in the running CKAN instance, run `bin/install_src`, add its plugin name to `CKAN__PLUGINS` in `.env`, and restart CKAN (`bin/restart`).
+
+Wait until CKAN is healthy (`curl http://localhost:5000/api/action/status_show`) before running tests, especially right after `bin/compose up`. If checks fail, see [Troubleshooting → CKAN not ready yet](docs/TROUBLESHOOTING.md#ckan-not-ready-yet).
+
+> **CI**: Non-draft pull requests to `main`, pushes to `main`, and manual [workflow_dispatch](https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-workflow-runs/manually-running-a-workflow) runs execute the [Catalog smoke test](.github/workflows/catalog-smoke.yml) workflow. Draft PRs skip the smoke test to save CI time; mark ready for review or run the workflow manually to trigger it.
 
 ### Teardown
 

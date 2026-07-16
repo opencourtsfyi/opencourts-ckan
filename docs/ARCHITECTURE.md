@@ -43,6 +43,9 @@ Client (curl, agent, verify_catalog.py)
 | Site URL / DCAT base URI | `ckan/docker-entrypoint.d/02_setup_dcat.sh` | Sets `ckan.site_url` and `ckanext.dcat.base_uri` from `CKAN_SITE_URL` |
 | Sample data | `scripts/seed.py` | Creates `test-org` and `test-package` for local verification |
 | Seeding (authenticated) | `scripts/seed.py` | Uses API token — write path only |
+| Stack smoke checks | `bin/test smoke` | Portal, DB, and storage health |
+| Test runner | `bin/test` | Unit, smoke, catalogue, integration, and all tiers |
+| Catalogue smoke checks | `bin/test catalogue`, `bin/test integration` | Anonymous read access (FR-5) |
 
 `CKAN_SITE_URL` must match how you reach CKAN locally (HTTP vs HTTPS, port). It drives download URLs, DCAT URIs, and catalogue document links. After changing it, restart CKAN; re-seed if you need stored resource URLs to update.
 
@@ -194,13 +197,44 @@ Catalogue responses include CKAN-native fields available without custom extensio
 
 ## Local verification workflow
 
-After [setup and seeding](../README.md#seeding-data), run the catalogue smoke script:
+Use `bin/test` to run local tests ([README § Running tests](../README.md#running-tests)). Test tiers:
 
-```sh
-uv run scripts/verify_catalog.py
-```
+| Tier | What it tests | Command | Depends on |
+|------|---------------|---------|------------|
+| **Unit** | Extension logic via pytest + `test.ini` against test DBs | `bin/test unit-setup`, then `bin/test unit` | Stack up; extensions in `src/` (no-op when empty) |
+| **Smoke** | Portal, PostgreSQL, CKAN storage | `bin/test smoke` | Stack up |
+| **Integration** | Smoke checks + catalogue after seed | `bin/test integration` | Stack up + seed |
+| **Catalogue** | Anonymous catalogue read checks (FR-5) | `bin/test catalogue` | Stack up + seed |
+| **All** | Unit, then integration (includes smoke + catalogue) | `bin/test all` | Stack up + seed |
 
-`scripts/verify_catalog.py` checks anonymous read access for [FR-5](https://github.com/opencourtsfyi/opencourts-ckan/issues/5) using the seeded `test-org` and `test-package` data:
+`bin/test all` does not run `smoke` separately — integration already includes stack checks.
+
+### Why stack and catalogue checks are separate
+
+`scripts/verify_stack.py` and `scripts/verify_catalog.py` are both host-side smoke scripts, but they serve different tiers:
+
+| Script | When to run | What it checks |
+|--------|-------------|----------------|
+| `verify_stack.py` | Stack is up; **no seed** | Portal (`status_show`), PostgreSQL, CKAN storage |
+| `verify_catalog.py` | After [seeding](../README.md#seeding-data) | Anonymous read access to seeded catalogue data ([FR-5](https://github.com/opencourtsfyi/opencourts-ckan/issues/5)) |
+
+Keeping them separate lets you validate infrastructure before seeding and re-run catalogue checks without repeating stack checks (as CI does with `bin/test catalogue` retries).
+
+### Stack checks (`scripts/verify_stack.py`)
+
+Run via `bin/test smoke` / `bin/test integration`, or directly with `uv run scripts/verify_stack.py`:
+
+| Check | What it proves |
+|-------|----------------|
+| Portal | CKAN `status_show` succeeds |
+| Database | PostgreSQL accepts connections (`pg_isready`) |
+| Storage | CKAN storage path is writable inside `ckan-dev` |
+
+No seed data required.
+
+### Catalogue checks (`scripts/verify_catalog.py`)
+
+Run via `bin/test catalogue` / `bin/test integration`, or directly with `uv run scripts/verify_catalog.py` (after stack checks). Requires [seeded](../README.md#seeding-data) `test-org` and `test-package` data. Checks anonymous read access for [FR-5](https://github.com/opencourtsfyi/opencourts-ckan/issues/5):
 
 | Check | Endpoint | What it proves |
 |-------|----------|----------------|
@@ -211,9 +245,7 @@ uv run scripts/verify_catalog.py
 | Organization metadata | `organization_show` | `test-org` visible without auth |
 | DCAT catalogue | `GET /catalog.jsonld` | Seeded dataset present in RDF feed |
 
-This is intentionally minimal — a single smoke script, not pytest or a shared test runner. Generic portal/DB/storage smoke tests and CI integration are tracked in [opencourts-infra#17](https://github.com/opencourtsfyi/opencourts-infra/issues/17) and [#23](https://github.com/opencourtsfyi/opencourts-infra/issues/23).
-
-The script covers both the CKAN Action API and DCAT layers; manual `curl` checks are optional if you need to debug a single endpoint.
+Together, stack and catalogue checks cover the CKAN Action API and DCAT layers. Manual `curl` checks are optional if you need to debug a single endpoint.
 
 ## References
 
