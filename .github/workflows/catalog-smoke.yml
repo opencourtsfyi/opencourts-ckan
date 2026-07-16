@@ -36,14 +36,15 @@ jobs:
           max_attempts=60
           sleep_seconds=10
           for attempt in $(seq 1 "$max_attempts"); do
-            if curl -fsS "$url" > /dev/null; then
+            if curl -fsS "$url" > /dev/null 2>&1; then
               echo "CKAN is ready (attempt ${attempt}/${max_attempts})"
               exit 0
             fi
-            echo "Waiting for CKAN... (attempt ${attempt}/${max_attempts})"
+            echo "Waiting for CKAN... (attempt ${attempt}/${max_attempts}; connection errors are normal during startup)"
             sleep "$sleep_seconds"
           done
           echo "ERROR: CKAN did not become healthy at ${url} within $((max_attempts * sleep_seconds)) seconds" >&2
+          bin/compose logs ckan-dev --tail 100 >&2 || true
           exit 1
 
       - name: Create sysadmin API token
@@ -56,17 +57,20 @@ jobs:
       - name: Seed database
         run: uv run scripts/seed.py "$CKAN_API_TOKEN"
 
+      - name: Verify stack
+        run: bin/test smoke
+
       - name: Verify catalogue access
         run: |
           set -euo pipefail
           echo "Waiting for Solr indexing after seed..."
           sleep 10
-          if uv run scripts/verify_catalog.py; then
+          if bin/test catalogue; then
             exit 0
           fi
           echo "First verify attempt failed; retrying once after additional delay..."
           sleep 15
-          uv run scripts/verify_catalog.py
+          bin/test catalogue
 
       - name: Tear down dev stack
         if: always()

@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+ROOT="$(dirname "${BASH_SOURCE[0]}")/.."
+cd "${ROOT}"
+
+CKAN_VENV="/srv/app/.venv-unit"
+CKAN_UV_CACHE_DIR="/srv/app/.cache/uv"
+
+usage() {
+  cat <<EOF
+Usage: bin/test <command>
+
+Commands:
+  unit-setup    Install extension test dependencies (run once after adding/updating extensions)
+  unit          Run pytest for extensions in src/
+  catalogue     Catalogue checks only (seed required)
+  integration   Stack + catalogue checks (seed required for catalogue)
+  smoke         Stack checks only (portal, DB, storage)
+  all           unit then integration (includes smoke + catalogue)
+
+Prerequisites: bin/compose up -d (stack healthy)
+EOF
+  exit 1
+}
+
+run_in_ckan_dev() {
+  "${ROOT}/bin/compose" exec \
+    -e UV_CACHE_DIR="${CKAN_UV_CACHE_DIR}" \
+    ckan-dev bash -c "$1"
+}
+
+run_stack_checks() {
+  uv run scripts/verify_stack.py
+}
+
+run_catalogue_checks() {
+  if ! uv run scripts/verify_catalog.py; then
+    echo >&2
+    echo "Catalogue checks failed. Seed data is required:" >&2
+    echo '  export CKAN_API_TOKEN="$(./bin/ckan user token add ckan_admin my-test-token | tail -1 | tr -d '"'"'[:space:]'"'"')"' >&2
+    echo '  uv run scripts/seed.py "$CKAN_API_TOKEN"' >&2
+    exit 1
+  fi
+}
+
+run_unit_setup() {
+  run_in_ckan_dev '
+    set -euo pipefail
+    found=0
+    for ext in /srv/app/src_extensions/ckanext-*; do
+      [ -d "$ext" ] || continue
+      found=1
+    done
+    if [ "$found" -eq 0 ]; then
+      echo "No extensions in src/ — unit test setup skipped (run bin/generate_extension when adding an extension)"
+      exit 0
+    fi
+
+    if [ ! -x "'"${CKAN_VENV}"'/bin/python" ]; then
+      echo "Creating unit test virtualenv at '"${CKAN_VENV}"'..."
+      uv venv "'"${CKAN_VENV}"'" --python python3 --system-site-packages
+    fi
+
+    for ext in /srv/app/src_extensions/ckanext-*; do
+      [ -d "$ext" ] || continue
+      echo "Installing test dependencies for $ext..."
+      cd "$ext"
+      uv pip install --python "'"${CKAN_VENV}"'/bin/python" -e .
+      for req in test-requirements.txt dev-requirements.txt; do
+        if [ -f "$req" ]; then
+          uv pip install --python "'"${CKAN_VENV}"'/bin/python" -r "$req"
+          break
+        fi
+      done
+    done
+  '
+}
+
+run_unit() {
+  run_in_ckan_dev '
+    set -euo pipefail
+    found=0
+    for ext in /srv/app/src_extensions/ckanext-*; do
+      [ -d "$ext" ] || continue
+      found=1
+    done
+    if [ "$found" -eq 0 ]; then
+      echo "No extensions in src/ — unit tests skipped (run bin/generate_extension when adding an extension)"
+      exit 0
+    fi
+
+    if [ ! -x "'"${CKAN_VENV}"'/bin/python" ]; then
+      echo "Unit test dependencies not installed — run: bin/test unit-setup" >&2
+      exit 1
+    fi
+
+    for ext in /srv/app/src_extensions/ckanext-*; do
+      [ -d "$ext" ] || continue
+      echo "Running unit tests in $ext..."
+      cd "$ext"
+      "'"${CKAN_VENV}"'/bin/pytest" --ckan-ini=test.ini ckanext/*/tests/
+    done
+  '
+}
+
+run_smoke() {
+  run_stack_checks
+}
+
+run_catalogue() {
+  run_catalogue_checks
+}
+
+run_integration() {
+  run_smoke
+  echo "---"
+  run_catalogue
+}
+
+run_all() {
+  run_unit
+  echo "---"
+  run_integration
+}
+
+case "${1:-}" in
+  unit-setup) run_unit_setup ;;
+  unit) run_unit ;;
+  catalogue) run_catalogue ;;
+  integration) run_integration ;;
+  smoke) run_smoke ;;
+  all) run_all ;;
+  *) usage ;;
+esac

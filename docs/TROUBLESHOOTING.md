@@ -53,7 +53,7 @@ On **macOS**, port 5000 is often taken by AirPlay Receiver — see [Port 5000 co
 
 ### CKAN not ready yet
 
-**Symptom:** `curl http://localhost:5000/api/action/status_show` fails, the CKAN site does not load, or `uv run scripts/verify_catalog.py` errors immediately after `bin/compose up`.
+**Symptom:** `curl http://localhost:5000/api/action/status_show` fails, the CKAN site does not load, or `bin/test smoke` / `bin/test catalogue` errors immediately after `bin/compose up`.
 
 **Likely cause:** Containers are still starting. CKAN, Postgres, and Solr all have health checks; the first boot after a build can take several minutes.
 
